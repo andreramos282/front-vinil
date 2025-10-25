@@ -1,6 +1,6 @@
 import { Route, BrowserRouter, Routes as Switch } from "react-router-dom";
-import HomePage fr../pages/Home.pageHome";
 import NotFound from "../pages/NotFound";
+import HomePage from "../pages/Home.page";
 
 function Router() {
     return (

@@ -1,48 +1,41 @@
-import { useEffect, useState } from "react"
-import css from "../styles/pages/home.module.css"
-import Disco from "../types/Disco"
-import getRequest from "../functions/connection/getRequest"
-import postRequest from "../functions/connection/postRequest"
-import DiscoComponent from "../components/Disco.component"
+import Disco from "../types/Disco";
+import css from "../styles/components/disco.module.css"
+import { useState } from "react";
+import deleteRequest from "../functions/connection/deleteRequest";
+import putRequest from "../functions/connection/putRequest";
+import formatDateForInput from "../functions/utils/formatDateForInput";
 
-function HomePage() {
-    const [titulo, setTitulo] = useState<string>("")
-    const [artista, setArtista] = useState<string>("")
-    const [genero, setGenero] = useState<string>("")
-    const [formato, setFormato] = useState<string>("vinil")
-    const [ano, setAno] = useState<string>("")
-    const [preco, setPreco] = useState<string>("")
-    const [discos, setDiscos] = useState<Disco[]>([])
+function DiscoComponent(props: { disco: Disco }) {
+    const { disco } = props
+    const [titulo, setTitulo] = useState<string>(disco.titulo)
+    const [artista, setArtista] = useState<string>(disco.artista)
+    const [genero, setGenero] = useState<string>(disco.genero)
+    const [formato, setFormato] = useState<string>(disco.formato)
+    const [ano, setAno] = useState<string>(formatDateForInput(new Date(disco.ano)))
+    const [preco, setPreco] = useState<string>(disco.preco.toString())
 
-    useEffect(() => {
-        getDiscos()
-    }, [])
+    async function editDisco() {
+        let numberPreco: number | undefined = Number(preco)
+        if (isNaN(numberPreco)) return
 
-    async function getDiscos(): Promise<void> {
-        const discos = await getRequest<Disco[]>("http://localhost:3001/disco/")
-        if (discos === undefined) {
-            setDiscos([])
-            return
-        }
-        setDiscos(discos)
+        const discoAtt: Disco = { titulo, artista, genero, formato, ano, preco: numberPreco }
+
+        await putRequest("http://localhost:3001/disco/" + disco._id, discoAtt)
+        window.location.reload()
     }
 
-    async function sendDisco(): Promise<void> {
-        if (titulo === "" || artista === "" || genero === "" || formato === "" || ano === "" || preco === "") return
-
-        const numberPreco = Number(preco)
-        if(isNaN(numberPreco)) return
-
-        const disco: Disco = { titulo, artista, genero, formato, ano, preco: numberPreco}
-
-        await postRequest("http://localhost:3001/disco/", disco)
+    async function deleteDisco() {
+        await deleteRequest("http://localhost:3001/disco/" + disco._id)
         window.location.reload()
     }
 
     return (
-        <main className={css.main}>
-            <h1>Discos</h1>
-            <div className={css.create}>
+        <div className={css.container}>
+            <h2>{disco.titulo} | {disco.formato}</h2>
+            <h3>{disco.artista} | R$ {disco.preco} </h3>
+            <p>Ano: {new Date(disco.ano).toUTCString().split("00:00:00")[0]} - Genero: {disco.genero}</p>
+            <hr />
+            <div className={css.edit_container}>
                 <div className={css.input}>
                     <label>Titulo</label>
                     <input
@@ -93,18 +86,13 @@ function HomePage() {
                         onChange={(e) => setPreco(e.target.value)}
                     />
                 </div>
-                <div className={css.button}>
-                    <button onClick={sendDisco}>Criar</button>
+                <div className={css.buttons}>
+                    <button onClick={editDisco} className={css.edit}>Editar</button>
+                    <button onClick={deleteDisco} className={css.delete}>Deletar</button>
                 </div>
             </div>
-            <hr />
-            <div className={css.discos}>
-                {discos.map((disco, index) => {
-                    return <DiscoComponent disco={disco} key={index} />
-                })}
-            </div>
-        </main>
+        </div>
     )
 }
 
-export default HomePage
+export default DiscoComponent
